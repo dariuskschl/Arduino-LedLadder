@@ -1,0 +1,98 @@
+/*
+  Dieses Sketch wurde von darius.kschl geschrieben!
+
+  Ziel des Spieles ist es, durch Drücken eines Knopfes an die Spitze einer (LED-)Leiter zu gelangen.
+  Es gibt eine blinkende LED die die Position auf die Leiter anzeigt.
+  Während des Spiels blinkt die LED der aktuellen Leitersprosse.
+  Der Spieler muss immer dann den Button drücken, wenn die LED der Leitersprosse leuchtet.
+  Schafft der dies, so steigt er eine weitere Stufe der Leiter auf.
+  Verpasst er dies, so ist das Spiel verloren.
+  Sobald die oberste Stufe erreicht ist, hat der Spieler gewonnen.
+  Die Schwierigkeit besteht darin das mit jeder Leitersprosse die man nach oben klettert die LEDs kürzer leuchten.
+*/
+
+// Button Pin Definitionen
+#define button  13
+
+// Spiel Parameter Definitionen
+#define ledAmount 12
+
+int ledPins[] = {12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, A5};                                   // Array indem alle LEDs abgespeichert sind.
+int timeLimit[ledAmount] = {650, 600, 550, 500, 450, 400, 350, 300, 250, 200, 150, 130};    // Array indem alle Blinkabstände abgspeichert sind.
+
+void setup() {
+  // Alle LED Pins als OUTPUT definiert.
+  for (int i = 0; i < 12; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+  pinMode(button, INPUT_PULLUP);  // Button Pin wird als INPUT_PULLUP definiert.
+}
+
+void loop() {
+  resetLeds(); // LEDs werden alle ausgeschaltet.
+
+  // Wenn man das Spiel verloren hat, erscheint eine Verlierer Animation andernfals eine Gewinner Animation.
+  if (playGame() == false) {  // Es wird überprüft ob von der Routine ein falsch zurückgegeben wrid.
+    playLosingAnimation();
+  }
+  else playWinningAnimation();  
+}
+
+boolean playGame() {
+  int led = 0;
+  while (led < ledAmount) {                     // Solange die aktuelle led unter der Gesamtzahl der Leds ist wird die Schleife ausgeführt.
+    digitalWrite(ledPins[led], HIGH);           // Alle Leds die man schon geschafft hat werden angeschaltet.
+    if (buttonPressed(led)) {                   // Der Unterroutine buttonPressed wird die aktuelle Led mitübergeben.
+      delay(300 + random(700));                 // Pause ist damit Zeit hat den Button wieder loszulassen. Pause ist zufäälig damir es schwieriger wird.
+      led++;                                    // Aktuelle Led wird um eins erhöht.
+    }
+    digitalWrite(ledPins[led], LOW);            // Wenn die der Button nicht gedrückt wird schaltet sich die Led wieder aus-
+    if (buttonPressed(led))                     // Wenn in dieser Zeit der Button gedrückt wird, hat man das Spiel verloren.
+      return false;
+  }
+  return true;                                  // Wenn man alle Leds hochgeklettert ist hat man gewonnen.
+}
+
+// Routine gibt zurück ob der Button in der Zeit wo die Led leuchtet bzw. nicht leuchtet gedrückt wurde.
+boolean buttonPressed (int led) {
+  long startTime = millis();
+  while ((millis() - startTime) < timeLimit[led]) {     // Schleife wird ausgeführt solange wie die Led an bzw. aus ist. Im Array sind unterschiedliche Blink Zeiten gespeichert.
+
+    if (digitalRead (button) == LOW) {                  // Schleife wird ausgeführt wenn Button gedrückt wurde.
+      return true;                                      // Es wird zurückgegeben das der Button gedrückt wurde.
+    }
+  }
+  return false;                                         // Es wird zurückgegeben das der Button nicht gedrückt wurde.
+}
+
+// Sobald man das Spiel verloren hat fällt man von der Leiter runter, indem sich die geschafften Leds nacheinander ausschalten.
+void playLosingAnimation() {
+  for (int i = ledAmount - 1; i >= 0; i--) {    // Da die geschaften Leds schon an sind, werden alle Leds beginnend mit der obersten ausgeschaltet.
+    digitalWrite(ledPins[i], LOW);
+    delay(150);
+  }
+}
+
+// Sobald man alle Leds angeschaltet hat, wird eine Gewinner Animation abgespielt.
+// Die geraden und ungeraden Leds blinken abwechselnd.
+void playWinningAnimation() {
+
+  for (int j = 0; j < 15; j++) {              // Durch verschachtelte For-Schleifen wird bewirkt das sich die Leds abwechselnd gerade und wieder ungerade sind.  
+    for (int i = 0; i < ledAmount; i++) { 
+      if ((j + i) % 2 == 0) {                 // Es wird gschaut ob j und i zusammen gerade sind.
+        digitalWrite(ledPins[i], HIGH);       // Gerade Leds werden angeschaltet.
+      }
+      else {
+        digitalWrite(ledPins[i], LOW);        // Ungerade Leds werden ausgeschaltet
+      }
+    }
+    delay(150);                               // Zeit die gewartet wird bis das Spiel von vorne beginnt.
+  }
+}
+
+// Routine mit der alle Leds ausgeschaltet werden können.
+void resetLeds() {
+  for (int i = 0; i < 12; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+}
